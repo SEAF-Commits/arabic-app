@@ -211,10 +211,13 @@ let AC;
 function sfx(good){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();(good?[523,659,784,1047]:[220,165]).forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+i*(good?.09:.14);o.type=good?'triangle':'sawtooth';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.22);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.25)})}catch(e){}}
 function confetti(){const c=['#e0a526','#2e9e5b','#0f5c4d','#d64545','#4aa3df','#f08a5d'];for(let i=0;i<36;i++){const s=document.createElement('span');s.className='cf';s.style.left=Math.random()*100+'vw';s.style.background=c[i%c.length];s.style.animationDelay=Math.random()*.35+'s';s.style.animationDuration=1.1+Math.random()*.8+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),2400)}}
 
-const nz=t=>t.replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,' ').trim();
+const nz=t=>String(t).normalize('NFKC').replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[^\u0621-\u064A\s]/g,'').replace(/\s+/g,' ').trim();
+const ed=(a,b)=>{const d=Array.from({length:a.length+1},(_,i)=>[i,...Array(b.length).fill(0)]);for(let j=1;j<=b.length;j++)d[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]};
+const hx=t=>[...String(t)].map(c=>c.codePointAt(0).toString(16)).join(' ');
+const same=(a,e)=>{const lim=e.length>=5?1:0;return a.split(' ').some(w=>[w,w.replace(/^ال/,'')].some(v=>ed(v,e)<=lim))};
 function showSay(l){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let busy=false;
-  app.innerHTML=`<div class="lesson"><div class="bar"><button class="x" onclick="home()" aria-label="إغلاق">✕</button><div class="prog"><i id="pg" style="width:${right/total*100}%"></i></div><div id="mas">${mas('happy',40)}</div></div><main class="q"><h2>انطق الكلمة</h2><p class="sub">Say the word out loud</p><div class="stage"><div class="emoji">${l.emoji}</div><div class="w">${l.word}</div><div class="ew">${l.ew}</div><button class="spk sm" onclick="play('${l.wk}','${l.word}')" aria-label="استمع">🔊</button></div><div class="say"><button class="spk" id="mic" aria-label="تحدث" ${SR?'':'disabled'}>🎤</button><p class="sub" id="mst" style="text-align:center">${SR?'اضغط على الميكروفون وانطق الكلمة':'متصفحك لا يدعم التعرف على الصوت، جرّب Chrome'}</p></div></main><footer class="foot" id="foot"><button class="skip" id="skp">تخطي</button></footer></div>`;
+  app.innerHTML=`<div class="lesson"><div class="bar"><button class="x" onclick="home()" aria-label="إغلاق">✕</button><div class="prog"><i id="pg" style="width:${right/total*100}%"></i></div><div id="mas">${mas('happy',40)}</div></div><main class="q"><h2>انطق الكلمة</h2><p class="sub">Say the word out loud</p><div class="stage"><div class="emoji">${l.emoji}</div><div class="w">${l.word}</div><div class="ew">${l.ew}</div><button class="spk sm" onclick="play('${l.wk}','${l.word}')" aria-label="استمع">🔊</button></div><div class="say"><button class="spk" id="mic" aria-label="تحدث" ${SR?'':'disabled'}>🎤</button><p class="sub" id="dbg" style="text-align:center;font-size:11px;opacity:.6;direction:ltr;word-break:break-all"></p><p class="sub" id="mst" style="text-align:center">${SR?'اضغط على الميكروفون وانطق الكلمة':'متصفحك لا يدعم التعرف على الصوت، جرّب Chrome'}</p></div></main><footer class="foot" id="foot"><button class="skip" id="skp">تخطي</button></footer></div>`;
   const mic=document.getElementById('mic'),mst=document.getElementById('mst'),exp=nz(l.word);
   document.getElementById('skp').onclick=()=>{right++;qi++;showQ()};
   if(!SR)return;
@@ -224,7 +227,7 @@ function showSay(l){
     mic.classList.add('rec');mst.textContent='أسمعك الآن...';
     r.onresult=e=>{
       const alts=[...e.results[0]].map(x=>nz(x.transcript));
-      const ok=alts.some(a=>a===exp||a==='ال'+exp||a.split(' ').includes(exp));
+      const ok=alts.some(a=>same(a,exp));
       if(ok){
         right++;document.getElementById('pg').style.width=right/total*100+'%';
         document.getElementById('mas').innerHTML=mas('cheer',40);document.querySelector('.stage').classList.add('dance');confetti();sfx(true);
@@ -233,7 +236,7 @@ function showSay(l){
         mst.textContent='';mic.disabled=true;
       }else{
         document.getElementById('mas').innerHTML=mas('sad',40);sfx(false);
-        mst.textContent='سمعتك تقول: «'+e.results[0][0].transcript+'». جرّب مرة أخرى';
+        mst.textContent='سمعتك تقول: «'+e.results[0][0].transcript+'». جرّب مرة أخرى';document.getElementById('dbg').textContent='heard='+hx(e.results[0][0].transcript)+' | norm='+alts[0]+' | want='+exp;
       }
     };
     r.onerror=e=>{mst.textContent=e.error==='not-allowed'||e.error==='service-not-allowed'?'اسمح للمتصفح باستخدام الميكروفون ثم حاول مرة أخرى':e.error==='no-speech'?'لم أسمع شيئًا، حاول مرة أخرى':'تعذّر التعرف على الصوت ('+e.error+')'};
