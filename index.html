@@ -217,15 +217,15 @@ const hx=t=>[...String(t)].map(c=>c.codePointAt(0).toString(16)).join(' ');
 const same=(a,e)=>{const lim=e.length>=5?1:0;return a.split(' ').some(w=>[w,w.replace(/^ال/,'')].some(v=>ed(v,e)<=lim))};
 function showSay(l){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let busy=false;
-  app.innerHTML=`<div class="lesson"><div class="bar"><button class="x" onclick="home()" aria-label="إغلاق">✕</button><div class="prog"><i id="pg" style="width:${right/total*100}%"></i></div><div id="mas">${mas('happy',40)}</div></div><main class="q"><h2>انطق الكلمة</h2><p class="sub">Say the word out loud</p><div class="stage"><div class="emoji">${l.emoji}</div><div class="w">${l.word}</div><div class="ew">${l.ew}</div><button class="spk sm" onclick="play('${l.wk}','${l.word}')" aria-label="استمع">🔊</button></div><div class="say"><button class="spk" id="mic" aria-label="تحدث" ${SR?'':'disabled'}>🎤</button><p class="sub" id="dbg" style="text-align:center;font-size:11px;opacity:.6;direction:ltr;word-break:break-all"></p><p class="sub" id="mst" style="text-align:center">${SR?'اضغط على الميكروفون وانطق الكلمة':'متصفحك لا يدعم التعرف على الصوت، جرّب Chrome'}</p></div></main><footer class="foot" id="foot"><button class="skip" id="skp">تخطي</button></footer></div>`;
-  const mic=document.getElementById('mic'),mst=document.getElementById('mst'),exp=nz(l.word);
+  app.innerHTML=`<div class="lesson"><div class="bar"><button class="x" onclick="home()" aria-label="إغلاق">✕</button><div class="prog"><i id="pg" style="width:${right/total*100}%"></i></div><div id="mas">${mas('happy',40)}</div></div><main class="q"><h2>انطق الكلمة</h2><p class="sub">Say the word out loud</p><div class="stage"><div class="emoji">${l.emoji}</div><div class="w">${l.word}</div><div class="ew">${l.ew}</div><button class="spk sm" onclick="play('${l.wk}','${l.word}')" aria-label="استمع">🔊</button></div><div class="say"><button class="spk" id="mic" aria-label="تحدث" ${SR?'':'disabled'}>🎤</button><p class="sub" id="dbg" style="display:none;text-align:center;font-size:11px;opacity:.6;direction:ltr;word-break:break-all"></p><p class="sub" id="mst" style="text-align:center">${SR?'اضغط على الميكروفون وانطق الكلمة':'متصفحك لا يدعم التعرف على الصوت، جرّب Chrome'}</p></div></main><footer class="foot" id="foot"><button class="skip" id="skp">تخطي</button></footer></div>`;
+  const mic=document.getElementById('mic'),mst=document.getElementById('mst'),exp=nz(l.word);if(location.search.includes('debug'))document.getElementById('dbg').style.display='block';
   document.getElementById('skp').onclick=()=>{right++;qi++;showQ()};
   if(!SR)return;
   mic.onclick=()=>{
     if(busy)return;busy=true;try{curA&&curA.pause()}catch(e){}
     const r=new SR();r.lang='ar-SA';r.interimResults=false;r.maxAlternatives=5;
     mic.classList.add('rec');mst.textContent='أسمعك الآن...';
-    r.onresult=e=>{
+    let got=null;const handle=e=>{
       const alts=[...e.results[0]].map(x=>nz(x.transcript));
       const ok=alts.some(a=>same(a,exp));
       if(ok){
@@ -239,8 +239,9 @@ function showSay(l){
         mst.textContent='سمعتك تقول: «'+e.results[0][0].transcript+'». جرّب مرة أخرى';document.getElementById('dbg').textContent='heard='+hx(e.results[0][0].transcript)+' | norm='+alts[0]+' | want='+exp;
       }
     };
+    r.onresult=e=>{got=e;try{r.stop()}catch(_){}};
     r.onerror=e=>{mst.textContent=e.error==='not-allowed'||e.error==='service-not-allowed'?'اسمح للمتصفح باستخدام الميكروفون ثم حاول مرة أخرى':e.error==='no-speech'?'لم أسمع شيئًا، حاول مرة أخرى':'تعذّر التعرف على الصوت ('+e.error+')'};
-    r.onend=()=>{busy=false;mic.classList.remove('rec')};
+    r.onend=()=>{busy=false;mic.classList.remove('rec');if(got){const e=got;got=null;setTimeout(()=>{actx();handle(e)},350)}};
     try{r.start()}catch(e){busy=false;mic.classList.remove('rec')}
   };
 }
@@ -274,7 +275,7 @@ function home(){
 let Q=[],qi=0,total=0,right=0,wrong=0,sel=null,cur=null,lessonN=0,locked=false;
 const ROBOT=`<svg viewBox="0 0 140 170" aria-hidden="true"><line x1="70" y1="10" x2="70" y2="26" stroke="var(--pri2)" stroke-width="5"/><circle cx="70" cy="10" r="8" fill="var(--gold)"/><rect x="22" y="26" width="96" height="70" rx="28" fill="var(--pri)"/><rect x="32" y="36" width="76" height="50" rx="20" fill="#e9f5f1"/><circle cx="52" cy="58" r="7" fill="#12302b"/><circle cx="88" cy="58" r="7" fill="#12302b"/><path d="M56 72q14 12 28 0" stroke="#12302b" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="42" cy="70" r="5" fill="#f4a3a3" opacity=".7"/><circle cx="98" cy="70" r="5" fill="#f4a3a3" opacity=".7"/><circle cx="22" cy="60" r="6" fill="var(--gold)"/><circle cx="118" cy="60" r="6" fill="var(--gold)"/><rect x="38" y="100" width="64" height="40" rx="16" fill="var(--pri2)"/><rect x="26" y="104" width="12" height="30" rx="6" fill="var(--pri2)"/><circle cx="32" cy="138" r="8" fill="var(--gold)"/><g class="arm"><rect x="96" y="100" width="12" height="32" rx="6" fill="var(--pri2)"/><circle cx="102" cy="136" r="8" fill="var(--gold)"/></g><rect class="l1" x="46" y="142" width="16" height="22" rx="7" fill="var(--pri2)"/><rect class="l2" x="78" y="142" width="16" height="22" rx="7" fill="var(--pri2)"/></svg>`;
 let fxBusy=false,NB;
-function actx(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume().catch(()=>{});return AC.state==='running'?AC:null}catch(e){return null}}
+function actx(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state!=='running')AC.resume().catch(()=>{});return AC.state==='running'?AC:null}catch(e){return null}}
 ['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,()=>actx(),{once:true,passive:true}));
 function tone(f1,f2,dur,type,peak,delay=0){const c=actx();if(!c)return;const t=c.currentTime+delay,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.setValueAtTime(f1,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+.05)}
 function whoosh(dur){const c=actx();if(!c)return;if(!NB){NB=c.createBuffer(1,c.sampleRate,c.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}const t=c.currentTime,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=NB;s.loop=true;f.type='bandpass';f.Q.value=1.1;f.frequency.setValueAtTime(250,t);f.frequency.exponentialRampToValueAtTime(2600,t+dur);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.2,t+dur*.6);g.gain.exponentialRampToValueAtTime(.0001,t+dur);s.connect(f);f.connect(g);g.connect(c.destination);s.start(t);s.stop(t+dur+.05)}
